@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Змейка</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: system-ui, sans-serif;
+    }
+    h1 { margin: 0; font-size: 32px; }
+    canvas { background: #1e293b; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4); }
+    .play { padding: 10px 28px; border: 0; border-radius: 10px; background: #22c55e; color: #052e16; font-size: 18px; font-weight: 700; cursor: pointer; }
+    .play:hover { background: #4ade80; }
+    .hint { margin: 0; color: #94a3b8; }
+    .score { margin: 0; font-size: 18px; color: #cbd5e1; }
+    .score b { color: #4ade80; }
+  </style>
+</head>
+<body>
+  <h1>🐍 Змейка</h1>
+  <p class="score">Счёт: <b id="score">0</b> · Рекорд: <b id="best">0</b></p>
+  <canvas id="game" width="400" height="400"></canvas>
+  <p class="hint" id="hint">Нажми «Начать игру» или пробел. Управление - стрелки</p>
+  <button class="play" id="play">Начать игру</button>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+    const hint = document.getElementById("hint");
+    const playButton = document.getElementById("play");
+
+    const CELL = 20;   // размер клетки в пикселях
+    const SIZE = 20;   // клеток по каждой стороне
+    const SPEED = 150; // миллисекунд на один шаг: меньше - быстрее
+
+    let snake, direction, nextDirection, food, timer, speed;
+    let score = 0;
+    let best = 0;
+    const scoreEl = document.getElementById("score");
+    const bestEl = document.getElementById("best");
+
+    function start() {
+      snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }];
+      direction = { x: 1, y: 0 };
+      nextDirection = direction;
+      food = randomFood();
+      playButton.hidden = true;
+      hint.textContent = "Ешь яблоки и не врезайся в стены и в себя";
+      score = 0;
+      speed = SPEED;
+      scoreEl.textContent = score;
+      clearInterval(timer);
+      timer = setInterval(loop, speed);
+    }
+
+    function randomFood() {
+      let cell;
+      do {
+        cell = { x: Math.floor(Math.random() * SIZE), y: Math.floor(Math.random() * SIZE) };
+      } while (snake.some((part) => part.x === cell.x && part.y === cell.y));
+      return cell;
+    }
+
+    function loop() {
+      direction = nextDirection;
+      const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+      const hitWall = head.x < 0 || head.y < 0 || head.x >= SIZE || head.y >= SIZE;
+      const hitSelf = snake.some((part) => part.x === head.x && part.y === head.y);
+      if (hitWall || hitSelf) return gameOver();
+
+      snake.unshift(head);
+      if (head.x === food.x && head.y === food.y) {
+        food = randomFood();
+        addPoint();
+      } else {
+        snake.pop();
+      }
+      draw();
+    }
+
+    // +1 очко за яблоко; каждые 3 яблока змейка ускоряется
+    function addPoint() {
+      score += 1;
+      scoreEl.textContent = score;
+      if (score > best) {
+        best = score;
+        bestEl.textContent = best;
+      }
+      if (score % 3 === 0) {
+        speed = Math.max(60, speed - 30);
+        clearInterval(timer);
+        timer = setInterval(loop, speed);
+        hint.textContent = "Быстрее!";
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#ef4444";
+      ctx.beginPath();
+      ctx.arc(food.x * CELL + CELL / 2, food.y * CELL + CELL / 2, CELL / 2 - 2, 0, Math.PI * 2);
+      ctx.fill();
+      snake.forEach((part, i) => {
+        ctx.fillStyle = i === 0 ? "#4ade80" : "#22c55e";
+        ctx.fillRect(part.x * CELL + 1, part.y * CELL + 1, CELL - 2, CELL - 2);
+      });
+    }
+
+    function gameOver() {
+      clearInterval(timer);
+      timer = null;
+      hint.textContent = `Игра окончена! Счёт: ${score}. Пробел - сыграть ещё раз`;
+      playButton.textContent = "Сыграть ещё раз";
+      playButton.hidden = false;
+    }
+
+    document.addEventListener("keydown", (event) => {
+      const turns = {
+        ArrowUp: { x: 0, y: -1 },
+        ArrowDown: { x: 0, y: 1 },
+        ArrowLeft: { x: -1, y: 0 },
+        ArrowRight: { x: 1, y: 0 },
+      };
+      const turn = turns[event.key];
+      if (turn && timer && (turn.x !== -direction.x || turn.y !== -direction.y)) {
+        nextDirection = turn;
+        event.preventDefault();
+      }
+      if (event.code === "Space" && !timer) {
+        start();
+        event.preventDefault();
+      }
+    });
+
+    playButton.addEventListener("click", start);
+
+    // Стартовая картинка: поле с подсказкой
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "18px system-ui";
+    ctx.textAlign = "center";
+    ctx.fillText("Нажми «Начать игру»", canvas.width / 2, canvas.height / 2);
+  </script>
+</body>
+</html>
