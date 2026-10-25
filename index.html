@@ -111,7 +111,7 @@
       ctx.arc(food.x * CELL + CELL / 2, food.y * CELL + CELL / 2, CELL / 2 - 2, 0, Math.PI * 2);
       ctx.fill();
       snake.forEach((part, i) => {
-        ctx.fillStyle = i === 0 ? "#4ade80" : "#22c55e";
+        ctx.fillStyle = i === 0 ? "#60a5fa" : "#3b82f6";
         ctx.fillRect(part.x * CELL + 1, part.y * CELL + 1, CELL - 2, CELL - 2);
       });
     }
